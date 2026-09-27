@@ -17,6 +17,11 @@ apply by construction. The domain mapping never said which directory a worker st
 orchestrator, not as an agent or a process.** As an LLM process it breaks principle 1
 (details below), and it cannot be built with agent teams anyway.
 
+**Services inside a floor (Rad, 2026-09-28): a grouping key, never a boss.** The
+optional `service` field sits next to `project` in the task contract. It filters the UI
+and the queue. It has no process, no LLM, no budget, no kill switch and no concurrency
+lane of its own (§ 6).
+
 ## 1. Check against the four principles
 
 **Principle 1: one agent by default. A floor boss process breaks it.**
@@ -96,6 +101,7 @@ caller, and chains are audited step by step.
 {
   "id": "2026-09-28T10-15-00Z-a1b2",
   "project": "rad-lab",
+  "service": null,
   "agent": "radlab-agent",
   "model": "sonnet",
   "brief": "…",
@@ -199,7 +205,55 @@ works. The gain is in architecture, not in schedule.
   `career-ops` (upstream push forbidden) is already covered by `irreversible`.
   `taf-harness`: no office file is written into it.
 
-## 6. Edits to apply if Rad validates
+## 6. Services inside a floor
+
+Rad's addition: a floor can hold several services, a level between the project and
+the agents. Examples: `hq-rag` → ingestion/indexing vs retrieval/eval; a large AdTech
+client floor → tracking vs reporting. That gives the proposed chain global boss → floor
+boss → service → agents.
+
+**Verdict: a service is a grouping key, not an active role.** It adds one optional
+field, `service`, to the existing task contract. It is handled by the same single
+orchestrator. It gets no boss, no process, no budget, no kill switch, and does not raise
+the floor's concurrency.
+
+Why not a service boss:
+- § 1 applies again, one level deeper. A third routing hop per task makes the chain
+  4 sessions long (3 of them routing only) and adds a third place where tasks can be
+  created outside the `parallel_group` gate. Each extra boss level multiplies the
+  chances of hidden fan-out; none of them does the work.
+- **A service must not be a parallel lane either.** If each service got its own
+  "1 task in progress" slot, a floor with 3 services would run 3 tasks at once by
+  default. That is fan-out through configuration, which principle 1 forbids.
+  Concurrency stays per floor (default 1); parallel work still requires
+  `parallel_group`, whatever the services involved. hq-rag's own `CLAUDE.md` shows the
+  concrete cost. An ingestion job (`embed_index.py`) and a retrieval query
+  (`search.py --hybrid`) both write the `emb_cache` table in `index/hq.db`. The first
+  time two writers ran at once, the precompute job crashed ("database is locked",
+  2026-09-26). Two parallel service lanes on that floor would reproduce this incident
+  by design.
+- **Budget and kill switch stay at floor level.** The blast radius that justifies a
+  kill switch is the repo, its git history and its keys: the project, not a sub-part of
+  it. The risk a service might seem to need its own switch for is a public or
+  irreversible action, for example a "reporting" service that emails a client. That is
+  already covered per task by `irreversible` and the approval queue. A per-service cap
+  would also split a budget that is already hard to attribute (§ 3). If Rad wants to see
+  spend per service, it is a `GROUP BY` on the ledger, not a cap.
+
+What a service is, concretely:
+- An entry under its floor in `office/floors.json`: `name`, plus optional path globs
+  (hq-rag: ingestion = `sources/`, `build_index.py`, `embed_index.py`; retrieval/eval =
+  `search.py`, `rerank.py`, `eval/`). The value must be one declared for that floor, so
+  it cannot drift into free text. Declared only where it helps: a floor with no services
+  is the default.
+- It is used for four things: a UI zone on the platform, a queue filter, a routing hint
+  (`find.py` + the service's paths narrow the agent choice, at 0 tokens), and a
+  path → service tag on events so the floor shows which part of the project is active.
+  None of these writes state or makes a decision.
+- **It is not an agent roster.** Agents stay global and visit the floor (§ 5). A
+  service is a slice of the project's work, not a team of agents.
+
+## 7. Edits to apply if Rad validates
 
 - `architecture.md` § Floor UI: "one platform per team" → "per project floor (floors
   registry)"; badge = active agents.
@@ -207,8 +261,9 @@ works. The gain is in architecture, not in schedule.
   per-floor lane and the default concurrency of 1.
 - `architecture.md` § Budget and kill switch: per project + global cap + `_all.flag`;
   `usage.tsv` `project` column.
-- `architecture.md` § Task file: `team` → `project`, add `parallel_group` (already
-  required by § Enforcing but missing from the example).
+- `architecture.md` § Task file: `team` → `project`, add optional `service`, add
+  `parallel_group` (already required by § Enforcing but missing from the example).
+  State that services never create a concurrency lane, a budget or a kill switch.
 - `architecture.md` § Mapping teams to Rad's domains: replace the table with the floors
   registry rule of § 3, `domain` as an optional grouping tag.
 - `mvp.md` phase 1 token panel: grouped by `project`. Phase 2 "one real task per team
@@ -221,3 +276,5 @@ works. The gain is in architecture, not in schedule.
 1. Confidential project: fully absent (recommended) or a locked placeholder later?
 2. OK to add a `project` column to `usage.tsv` (3 HQ scripts + the report)?
 3. Keep an optional `domain` tag to group floors into wings, or a flat list?
+   (Services are the level *below* a floor, domains the level *above*. Both are tags;
+   neither gets a boss.)
