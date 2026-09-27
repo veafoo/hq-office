@@ -8,26 +8,42 @@ phase; this is the shape phase 1/2 would build (see `mvp.md` for the cut).
 
 ### Floor UI
 A read-only view (phase 1), then a task-input surface (phase 2), of every
-team as an isometric platform, matching `img/ref-design-isometric-teams.jpg`:
-one platform per team, agent count, a live/idle/waiting badge, an approval
-count badge. A right panel lists tasks with status (pending, in progress,
-waiting on approval, done), filterable, mirroring the "Restructure AI" demo's
-sidebar badges (`references.md` section 4). Renders client-side; reads
-state, never writes it directly (all writes go through the orchestrator or
-the human approving in the queue).
+project as an isometric platform (one floor per entry in the floors
+registry, see § Mapping below), matching
+`img/ref-design-isometric-teams.jpg`: one platform per floor, a badge for
+agents *currently* active there (not a fixed roster, see § Mapping), a
+live/idle/waiting badge, an approval count badge. Dormant floors (no recent
+activity) render as a collapsed strip rather than full platforms so 26
+project directories don't mean 26 empty platforms. A right panel lists tasks
+with status (pending, in progress, waiting on approval, done), filterable,
+mirroring the "Restructure AI" demo's sidebar badges (`references.md`
+section 4). Renders client-side; reads state, never writes it directly (all
+writes go through the orchestrator or the human approving in the queue).
 
 ### Orchestrator
-The single persistent dispatcher. Per `plan.md`'s own gap analysis, this must
-be a session or a script, never a subagent (a subagent cannot outlive the
-call that spawned it, and HQ's rule is subagents cannot spawn subagents).
-Concretely: a long-running `claude -p` loop (or a small Node/Python daemon
-that calls `claude -p` per task) that reads the task queue, picks the next
-task, resolves which team and which existing HQ agent should run it (from
-the ~430-agent registry, not a new agent per task), and dispatches by
-spawning that agent as its own `claude` process, matching munder-difflin's
-"one agent, one real CLI process" model rather than the-office's in-process
-SDK calls, specifically so CLAUDE.md, hooks, skills, and model routing apply
+The single persistent dispatcher: one, not one per floor. Per `plan.md`'s
+own gap analysis, this must be a session or a script, never a subagent (a
+subagent cannot outlive the call that spawned it; HQ's actual choice is that
+multi-step chains are driven by a session or a script so each step is
+audited, not, as an earlier draft of this doc said, because subagents
+can't nest: they can, up to a default depth of 3). Concretely: a
+long-running `claude -p` loop (or a small Node/Python daemon that calls
+`claude -p` per task) that reads the task queue, picks the next task,
+resolves which floor (project) and which existing HQ agent should run it
+(from the ~430-agent registry, not a new agent per task), and dispatches by
+spawning that agent as its own `claude` process with the floor's project
+directory as its cwd, matching munder-difflin's "one agent, one real CLI
+process" model rather than the-office's in-process SDK calls, specifically
+so the project's own CLAUDE.md, hooks, skills, and model routing apply
 automatically.
+
+A "floor boss" is a role of this same orchestrator, filtered on
+`project == <floor>`, never a second LLM process (see
+`floor-per-project-revision.md` § 2 for why: a per-floor LLM boss would
+chain 2-3 routing-only sessions per task and become a second, ungated
+creator of tasks, breaking the `parallel_group` fan-out gate below). Default
+concurrency is **one task in progress per floor**; more only through an
+explicit `parallel_group`, exactly like fan-out across floors.
 
 ### Workers
 Each worker is an existing HQ agent (from the registry, `scripts/find.py`),
@@ -70,15 +86,28 @@ irreversible ones cannot, enforced by a field on the task, not by UI
 convention alone.
 
 ### Budget and kill switch
-Per team, read from the existing `.claude/logs/usage.tsv` ledger (no new
-cost-tracking system) plus a per-team cap file the orchestrator checks before
-dispatching: if a team's spend this period exceeds its cap, the orchestrator
-refuses new tasks for that team and surfaces it in the UI, rather than the
-agent self-policing its own budget. The kill switch is a flag file per team
-(`office/kill/<team>.flag`); its presence makes the orchestrator refuse to
-dispatch to that team until removed. Both are enforced in the orchestrator's
-dispatch loop, so a compromised or buggy agent cannot bypass its own budget
-or revive itself past a kill switch.
+Per project (floor), read from the existing `.claude/logs/usage.tsv` ledger
+plus a per-floor cap in the floors registry (`office/floors.json`, `cap_usd`)
+that the orchestrator checks before dispatching: if a floor's spend this
+period exceeds its cap, the orchestrator refuses new tasks for that floor and
+surfaces it in the UI, rather than the agent self-policing its own budget.
+**A global cap comes first, per-floor caps second**: the binding limit is
+Rad's subscription, shared by every floor; 20 respected floor caps can still
+exhaust the plan. `usage.tsv` needs one ledger change to make this
+computable at all: it has no team/project column today, so add a `project`
+column (writers: `scripts/career-morning.sh`, `scripts/agency-triggers.py`,
+`scripts/auto_handoff.py`; reader: `scripts/usage-report.py`; backfill old
+rows from a fixed automation→project map); this touches HQ scripts outside
+this repo, so it needs Rad's go (given 2026-09-28: approved). The kill
+switch is a flag file per floor (`office/kill/<project>.flag`), plus
+`office/kill/_all.flag` for the global orchestrator; its presence makes the
+orchestrator refuse to dispatch to that floor (or to any floor, for `_all`)
+until removed. Both are enforced in the orchestrator's dispatch loop, so a
+compromised or buggy agent cannot bypass its own budget or revive itself
+past a kill switch. Services (§ Mapping) never get their own cap or kill
+switch: the blast radius that justifies one is the project (its repo, git
+history, keys), not a slice of it; spend per service is a `GROUP BY` on the
+ledger, not a gate.
 
 ### Event log
 Append-only JSONL, one line per Claude Code hook firing
@@ -105,27 +134,38 @@ keeping is in the brain); they are working state, not memory.
 
 ```json
 {
-  "id": "2026-09-26T10-15-00Z-a1b2",
-  "team": "adtech",
+  "id": "2026-09-28T10-15-00Z-a1b2",
+  "project": "taf-harness",
+  "service": null,
   "agent": "tracking-audit",
   "model": "sonnet",
   "brief": "Audit the sGTM container on client X for consent propagation gaps",
   "requires_approval": true,
   "irreversible": false,
+  "parallel_group": null,
   "status": "pending",
   "dependencies": [],
   "budget_usd_cap": 2.0,
-  "created_at": "2026-09-26T10:15:00Z",
+  "created_at": "2026-09-28T10:15:00Z",
   "result_ref": null
 }
 ```
 
-`status` moves through `pending`, `in_progress`, `waiting_approval`, `done`,
-`failed`, `killed`. `irreversible` is what routes a task to the approval
-queue as non-batchable, regardless of `requires_approval`, matching design
-principle 3 exactly ("human before push to main, send, pay, publish,
-mainnet"). `result_ref` points at a brain note path once the agent writes
-one, not at task-local storage.
+`project` is the floor id (from `office/floors.json`) and sets the worker's
+cwd; `"project": "hq"` means the HQ root itself (brain, automations,
+registry work that belongs to no project directory). A single `project`
+field, not a separate `team`: two fields that must agree would drift.
+`service` is optional, a grouping key declared under that floor in the
+registry (UI zone + queue filter + 0-token routing hint); it never gets its
+own process, budget, kill switch or concurrency lane (see § Budget). A task
+has exactly one floor; multi-floor tasks are out of scope through phase 2.
+`parallel_group` is what opts a task into fan-out (§ Enforcing, point 1);
+`null` by default. `status` moves through `pending`, `in_progress`,
+`waiting_approval`, `done`, `failed`, `killed`. `irreversible` is what routes
+a task to the approval queue as non-batchable, regardless of
+`requires_approval`, matching design principle 3 exactly ("human before push
+to main, send, pay, publish, mainnet"). `result_ref` points at a brain note
+path once the agent writes one, not at task-local storage.
 
 ### Event (`office/events/log.jsonl`, one JSON object per line)
 
@@ -161,25 +201,33 @@ phone access), not Electron. Reasons:
    for; alerts already go through `say` and PushNotification, both callable
    from a plain Node/Python backend with no Electron dependency.
 
-## Mapping teams to Rad's domains
+## Mapping: floors registry, not a hand-picked domain table
 
-Direct application of `plan.md`'s roadmap section, one isometric platform per
-existing domain, agents drawn from the existing ~430-agent registry rather
-than invented per team:
+Revised 2026-09-28 (`floor-per-project-revision.md`): a floor is an existing
+`PROJECTS/<name>/` directory, not a hand-picked business domain. Reason: a
+worker is a `claude` process, and the project directory is its cwd, so the
+project's own `CLAUDE.md`, skills and brain folder (`KNOWLEDGE_BASE/projects/
+<p>/`) apply by construction. A domain like "Quant" or "Research" has no
+brain folder of its own and would need a mapping the brain doesn't know.
 
-| Team (floor platform) | Domain | Agents (existing registry) |
-|---|---|---|
-| Freelance / Compta | invoicing, accounting, fiscal | comptable, fiscaliste, controleur-fiscal, notaire (paperasse pack) |
-| Career | job search, evaluation, writing | career-scanner, career-evaluator, career-writer, career-agent |
-| AdTech | tracking, adserving, RGPD | taf-harness skills (tagging-plan, tracking-audit, sgtm-review, rgpd-audit, etc.) |
-| Quant | rad-lab R&D, backtesting | radlab-agent |
-| Research | RAG, veille, fact-checking | cherche, research, fact-checker, docs-lookup |
-| HQ Ops | brain, automations, registry | brain-curator, continuous-learning, handoff-writer |
+`office/floors.json` is the registry: central to this repo, generated by a
+deterministic script (`ls PROJECTS/` + `confidential-projects.sh` + a small
+override file), never hand-maintained, never a file dropped into each
+project (`taf-harness` stays self-contained, `Megakichta` stays read-only).
+Per floor: `id` (lowercase; directory casing varies, e.g. `PROJECTS/Kyro`
+vs `KNOWLEDGE_BASE/projects/kyro`), `dir`, `mode` (`active` | `read_only` |
+`excluded`), `cap_usd`, optional `domain` (a pure grouping tag for the UI,
+e.g. "Quant" spanning `rad-lab` + `wolfdogz`; no boss, no budget of its own,
+same rule as `service`, one level up). `excluded` covers the confidential
+project: no floor, no task, no event, no usage line; the event writer also
+drops any event whose cwd or touched path falls under an excluded project.
 
-This is a read map for phase 1 (which teams and agents exist, what each is
-doing right now), and a dispatch map for phase 2 (which team a new task
-belongs to). No team is invented that doesn't already have agents doing that
-work today.
+This is a read map for phase 1 (which floors and agents exist, what each is
+doing right now: the badge counts agents *currently active* there, not a
+fixed roster: of 26 project directories, only one has its own dedicated
+agents today), and a dispatch map for phase 2 (which floor a new task
+belongs to, known deterministically once Rad briefs from a given floor in
+the UI). No floor is invented that doesn't already exist as a project.
 
 ## Enforcing the four design principles in code
 

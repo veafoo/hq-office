@@ -49,10 +49,14 @@ Munder's download moved to harnessmd.com on 2026-09-17 (possible rebrand / paid 
 - Dispatch by a single orchestrator = separate processes, compatible with "subagents can't spawn
   subagents" (same pattern as `claude -p` chains). Use Claude Code agent teams if it already does it.
 - Alerts: `say` / PushNotification only at decision points.
-- Teams = Rad's domains: Freelance/Compta · Career · AdTech (taf-harness) · Quant (rad-lab, Wolfdogz)
-  · Research (RAG, veille) · HQ Ops (brain, automations). Agents from the existing registry.
-- Local web app (browser tab, later phone on LAN) rather than Electron; isometric render Pixi.js or
-  Three.js; terminals xterm.js + node-pty.
+- Local web app (browser tab, later phone on LAN) rather than Electron (confirmed by Rad
+  2026-09-27); isometric render Pixi.js or Three.js; terminals xterm.js + node-pty.
+
+**Superseded 2026-09-28** (`floor-per-project-revision.md`, `decisions/2026-09-28-hq-office-floor-
+per-project.md`): "Teams = Rad's domains" (Freelance/Compta, Career, AdTech, Quant, Research, HQ
+Ops) is replaced by one floor per HQ project (`office/floors.json`, generated), plus an optional
+`service` grouping key inside a floor and an optional `domain` tag above it. Neither gets a boss,
+budget or kill switch of its own; those stay at floor level. See `architecture.md` § Mapping.
 
 ## Reference model: generic multi-agent orchestration (techwith.ram infographic, 2026-09-25)
 
@@ -124,6 +128,14 @@ Do NOT copy:
 
 ## Roadmap (Rad, 2026-09-25): HQ Office → HQ Agency → HQ Ecommerce — all parked
 
+**Superseded 2026-09-28**: Agency and Ecommerce are no longer separate future offices with their
+own codebase. They become new floors under HQ Office once dispatch (phase 2) works: the
+orchestrator, approval queue, review gate, budget and kill switch are all reused as-is. The order
+below is unchanged (Office's dispatch has to work first); only the "separate office" framing drops.
+Two things the floor model doesn't cover yet, tracked separately, not blocking: non-Claude spend
+(Higgsfield, voice, ad spend) and per-floor result metrics (sales, attribution). See
+`floor-per-project-revision.md` § 4.
+
 1. **HQ Office** — the learning ground: orchestration, dispatch, approval queue, per-agent review,
    budgets, on Rad's own domains. Everything below reuses what it teaches.
 2. **HQ Agency** — a content team for **Rad's own** Insta/TikTok (Rad: "c'est pour moi").
@@ -153,4 +165,5 @@ Do NOT copy:
 2. Dispatch: brief → orchestrator → headless workers → results as files; budget + kill switch.
 3. In-app terminals, voice.
 
-Open: project name (proposed `PROJECTS/hq-office`), web vs Electron confirmation.
+Open: project name (proposed `PROJECTS/hq-office`). Web vs Electron: confirmed, web app
+(2026-09-27).
