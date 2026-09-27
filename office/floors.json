@@ -1,0 +1,187 @@
+{
+  "generated_by": "scripts/gen_floors.py",
+  "floors": [
+    {
+      "id": "hq",
+      "dir": null,
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "canis-majoris",
+      "dir": "Canis-Majoris",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "fenrir",
+      "dir": "Fenrir",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "kyro",
+      "dir": "Kyro",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "megakichta",
+      "dir": "Megakichta",
+      "mode": "read_only",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "wolfdogz",
+      "dir": "Wolfdogz",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "adtech-docs",
+      "dir": "adtech-docs",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "bear-wizard",
+      "dir": "bear-wizard",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "big-momma",
+      "dir": "big-momma",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "career-ops",
+      "dir": "career-ops",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "cookieless-tracking-lab",
+      "dir": "cookieless-tracking-lab",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "director-cut",
+      "dir": "director-cut",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "dooh-factory",
+      "dir": "dooh-factory",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "formation-adtech",
+      "dir": "formation-adtech",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "hq-office",
+      "dir": "hq-office",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "hq-rag",
+      "dir": "hq-rag",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "jarvis",
+      "dir": "jarvis",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "megakichta-paper-trading",
+      "dir": "megakichta-paper-trading",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "pixel-agents",
+      "dir": "pixel-agents",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "prod-docu",
+      "dir": "prod-docu",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "rad-freelance",
+      "dir": "rad-freelance",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "rad-lab",
+      "dir": "rad-lab",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "rollacosta",
+      "dir": "rollacosta",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "rollacosta-paper",
+      "dir": "rollacosta-paper",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "spotify-to-ytmusic",
+      "dir": "spotify-to-ytmusic",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    },
+    {
+      "id": "taf-harness",
+      "dir": "taf-harness",
+      "mode": "active",
+      "cap_usd": null,
+      "domain": null
+    }
+  ]
+}
