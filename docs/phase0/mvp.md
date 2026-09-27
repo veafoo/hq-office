@@ -10,16 +10,18 @@ each phase.
 ## Phase 1: read-only office
 
 ### Screens
-- The isometric floor: one platform per team (from `architecture.md`'s
-  mapping table), agent count and a live/idle/waiting badge per platform,
-  reading the event log's most recent state per agent.
-- A team detail panel: click a platform, see its agents, each agent's
-  current status and its last few event-log lines (a lightweight transcript
-  tail, not the full JSONL).
+- The isometric floor: one platform per floor (from `office/floors.json`,
+  see `architecture.md`'s mapping section), agent count and a live/idle/
+  waiting badge per platform, reading the event log's most recent state per
+  agent. Dormant floors collapse to a strip.
+- A floor detail panel: click a platform, see its currently active agents,
+  each agent's current status and its last few event-log lines (a
+  lightweight transcript tail, not the full JSONL).
 - A backlog/automations panel: reads `KNOWLEDGE_BASE/registry/backlog.md` and
   `automations.md` as plain text, no new data model.
-- A token panel: reads `.claude/logs/usage.tsv` directly, grouped by team
-  using the mapping table; no new cost-tracking system.
+- A token panel: reads `.claude/logs/usage.tsv` directly, grouped by the
+  `project` column (added per `floor-per-project-revision.md` § 3 — the
+  ledger has none today); no new cost-tracking system otherwise.
 
 ### Data it reads
 Existing files only: the agent/skill registry (`scripts/find.py`'s index),
@@ -56,13 +58,13 @@ misfire, per the lesson from pixel-agents.
 ## Phase 2: dispatch at the smallest useful scope
 
 ### Smallest useful scope
-One text box in the floor UI ("brief a team"), one team selectable, the
-orchestrator creates exactly one task (no fan-out in the first version),
-dispatches it to one existing agent in that team as a real `claude -p`
-process, and the result lands as a task file plus, if the agent judged it
-worth keeping, a brain note. No mailboxes, no multi-agent handoff chains yet;
-those are phase 3 additions per `plan.md`'s own phase list, not part of this
-cut.
+One text box in the floor UI ("brief this floor"), one floor selectable
+(the project is then known deterministically), the orchestrator creates
+exactly one task (no fan-out in the first version), dispatches it to one
+existing agent for that project as a real `claude -p` process, and the
+result lands as a task file plus, if the agent judged it worth keeping, a
+brain note. No mailboxes, no multi-agent handoff chains yet; those are
+phase 3 additions per `plan.md`'s own phase list, not part of this cut.
 
 ### What it adds over phase 1
 - The task contract and event contract from `architecture.md`, implemented
@@ -91,8 +93,8 @@ cut.
   (budget check, kill switch check, spawn, watch). 12 to 18 hours.
 - Approval queue UI and its backing logic (irreversible-flag enforcement,
   no batch approve on flagged items). 8 to 12 hours.
-- Wiring one real end-to-end task per team (six teams from the mapping
-  table) to prove the loop actually works per team, not just in the
+- Wiring one real end-to-end task on 4 to 6 active floors (including `hq`
+  itself) to prove the loop actually works per floor, not just in the
   abstract. 6 to 10 hours.
 - Opus audit pass, specifically checking that principle 2 (different-model
   review) and principle 3 (human before irreversible) are enforced in code
